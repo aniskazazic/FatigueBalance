@@ -78,23 +78,6 @@ The system improves over time through user feedback. When coaches disagree with 
    ```
    Server will run on `http://localhost:8000`
 
-### Frontend Setup
-
-1. Navigate to frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start development server:
-   ```bash
-   npm start
-   ```
-   Dashboard will be available on `http://localhost:3000`
 
 ## Usage
 
