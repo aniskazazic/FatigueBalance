@@ -1,10 +1,10 @@
-# Fatigue Agent - Intelligent Player Fatigue Management System
+# FatigueBalance - Intelligent Player Fatigue Assessment Agent
 
 ## Overview
 
-Fatigue Agent is an autonomous software agent that helps coaches and sports scientists make data-driven decisions about player training loads and injury prevention by analyzing training session data (sleep hours, stress level, distance covered, sprint count). Using machine learning, it provides actionable recommendations through an asynchronous, queue-based processing system.
+FatigueBalance is an intelligent agent for assessing football player fatigue levels after training sessions and matches, implemented as a complete AI system with perception, continuous learning mechanisms, and real-time monitoring interface. The system uses a Neural Network (MLPRegressor) for fatigue regression (fatigue score 0-100), combined with rule-based classification for risk level assessment and feedback-driven incremental learning for continuous performance improvement.
 
-The system monitors player fatigue levels and suggests appropriate training intensities, rest days, or recovery protocols based on continuous learning from feedback and historical data.
+The system autonomously monitors player fatigue levels and provides actionable recommendations for training intensity adjustments, rest days, and recovery protocols based on continuous learning from coach feedback and historical training data.
 
 ## How It Works
 
@@ -13,33 +13,35 @@ The system monitors player fatigue levels and suggests appropriate training inte
 The system follows Clean Architecture with four distinct layers:
 
 1. **Domain Layer** - Core business entities (TrainingSession, Prediction, ActionType)
-2. **Application Layer** - Business logic and agent runners implementing the Sense→Think→Act cycle
-3. **Infrastructure Layer** - Technical implementations (SQL Server database, ML classifier model)
+2. **Application Layer** - Business logic and agent runners implementing the Sense→Think→Act→Learn cycle
+3. **Infrastructure Layer** - Technical implementations (SQL Server database, Neural Network ML classifier)
 4. **Web Layer** - Thin API layer (FastAPI endpoints)
 
 ### The Agent Cycle
 
-Fatigue Agent operates autonomously in the background using a continuous loop:
+FatigueBalance operates autonomously in the background using a continuous cognitive loop:
 
 1. **SENSE** - Monitors the queue for new training sessions from coaches/athletes
-2. **THINK** - Processes data through ML models and business rules to predict fatigue and recommend actions
-3. **ACT** - Stores predictions, evaluates risk levels, and updates session status
+2. **THINK** - Processes data through Neural Network models and rule-based business rules to predict fatigue and recommend actions
+3. **ACT** - Stores predictions, evaluates risk levels using classification rules, and updates session status
+4. **LEARN** - Incorporates coach feedback to incrementally retrain the Neural Network
 
 This cycle runs independently of API requests, ensuring real-time processing without blocking user interactions.
 
 ### Learning Capability
 
-The system improves over time through user feedback. When coaches disagree with a fatigue prediction and provide the correct assessment, the agent uses this feedback to retrain and improve future predictions. The system automatically triggers retraining when sufficient feedback data is accumulated.
+The system improves over time through user feedback (incremental learning). When coaches disagree with a fatigue prediction and provide the correct assessment, the agent uses this feedback to retrain the Neural Network model and improve future predictions. The system automatically triggers retraining when sufficient feedback data is accumulated, implementing a complete feedback-driven learning loop.
 
 ## Key Features
 
 * **Autonomous Operation** - Runs continuously in background threads without manual intervention
 * **Asynchronous Processing** - Training sessions are queued and processed independently from API calls
-* **Machine Learning Integration** - Uses scikit-learn for regression-based fatigue prediction
-* **Feedback Learning** - Continuously improves from coach corrections and field observations
-* **Risk Assessment** - Automatically categorizes fatigue into Low/Medium/High risk levels
-* **RESTful API** - Simple endpoints for integration
-* **Web Dashboard** - Frontend interface for submitting sessions and monitoring predictions
+* **Neural Network Integration** - Uses scikit-learn MLPRegressor (Multi-layer Perceptron) for intelligent fatigue prediction
+* **Rule-Based Classification** - Intelligent classification of fatigue into Low/Medium/High risk levels based on learned thresholds
+* **Feedback-Driven Learning** - Continuously improves from coach corrections and field observations using incremental learning
+* **Continuous Learning** - Model retrains automatically when sufficient feedback accumulates
+* **RESTful API** - Simple endpoints for integration with coaching systems
+* **Web Dashboard** - Frontend interface for submitting sessions and monitoring predictions in real-time
 
 ## Installation & Setup
 
@@ -78,62 +80,19 @@ The system improves over time through user feedback. When coaches disagree with 
    ```
    Server will run on `http://localhost:8000`
 
+### Frontend Setup
 
-## Usage
+1. Navigate to frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-### Submitting Training Data
-
-POST `/predict`
-```json
-{
-  "player_name": "John Smith",
-  "position": "midfielder",
-  "activity_type": "game",
-  "sleep_hours": 7.5,
-  "stress_level": 5,
-  "distance_km": 9.2,
-  "sprint_count": 24,
-  "soreness": 4,
-  "rpe": 6,
-  "injury_illness": false
-}
-```
-
-Response:
-```json
-{
-  "session_id": 42,
-  "status": "queued"
-}
-```
-
-### Checking Predictions
-
-GET `/predictions/{session_id}`
-
-Returns:
-```json
-{
-  "session_id": 42,
-  "status": "processed",
-  "predicted_action": "reduce_load",
-  "fatigue_score": 72.5,
-  "risk_level": "high",
-  "confidence": 0.89
-}
-```
-
-### Providing Feedback
-
-POST `/feedback`
-```json
-{
-  "session_id": 42,
-  "correct": false,
-  "user_label": "complete_rest",
-  "comment": "Player showed severe fatigue symptoms"
-}
-```
+2. Open `index.html` in your web browser or serve with a local server:
+   ```bash
+   # If you have Python installed
+   python -m http.server 8080
+   ```
+   Dashboard will be available on `http://localhost:8080`
 
 ## Testing
 
@@ -145,10 +104,11 @@ python scripts/test_agent.py
 
 This test script:
 - Submits sample training sessions
-- Gets baseline predictions
+- Gets baseline predictions from the Neural Network
 - Provides feedback with corrections
-- Triggers model retraining
+- Triggers incremental model retraining
 - Verifies that agent predictions improved based on feedback
+- Validates the complete Sense→Think→Act→Learn cycle
 
 ## Project Structure
 
@@ -156,7 +116,7 @@ This test script:
 .
 ├── backend/
 │   ├── scripts/
-│   │   ├── train_from_csv.py      # Train model from CSV
+│   │   ├── train_from_csv.py      # Train Neural Network from CSV
 │   │   ├── init_db.py             # Initialize SQL Server database
 │   │   └── test_agent.py          # Test agent learning capability
 │   ├── application/
@@ -167,87 +127,101 @@ This test script:
 │   │   └── entities.py            # Domain models
 │   ├── infrastructure/
 │   │   ├── database.py            # Database interactions
-│   │   ├── models.py              # SQLAlchemy models
+│   │   ├── models.py              
 │   │   └── ml/
-│   │       └── classifier.py      # ML model wrapper
+│   │       └── classifier.py      # Neural Network wrapper (MLPRegressor)
 │   ├── web/
 │   │   ├── main.py                # FastAPI application
 │   │   └── dtos.py                # Request/response models
 │   ├── bootstrap.py               # Dependency injection setup
 │   ├── main.py                    # Entry point
-│   ├── fatigue_model.joblib       # Trained ML model
+│   ├── fatigue_model.joblib       # Trained Neural Network model
 │   └── requirements.txt           # Python dependencies
 ├── frontend/
-│   ├── index.html                 # Main HTML
-│   ├── script.js                  # React application
+│   ├── index.html                 # Main HTML/interface
+│   ├── script.js                  # Frontend logic
 │   └── style.css                  # Styling
-.
+└── README.md
 ```
 
-## Why It's an Agent (Not Just an API)
+## Why It's an Agent (Not Just an ML Model)
 
-Unlike traditional ML APIs that process requests synchronously, Fatigue Agent:
+Unlike traditional ML APIs that process requests synchronously, FatigueBalance:
 
-* **Operates Continuously** - Background workers process requests without user initiation
-* **Maintains State** - Uses a database queue to track sessions and feedback
-* **Implements Cognitive Cycle** - Follows complete Sense→Think→Act→Learn loop
-* **Learns Autonomously** - Improves predictions without explicit retraining commands
+* **Operates Continuously** - Background workers (runners) process requests without user initiation
+* **Maintains State** - Uses a database queue to track sessions, feedback, and learning progress
+* **Implements Cognitive Cycle** - Follows complete Sense→Think→Act→Learn loop with perception and action
+* **Learns Autonomously** - Improves predictions automatically through feedback without explicit retraining commands
 * **Runs Independently** - Keeps processing even when users aren't actively using the system
-* **Handles Background Tasks** - Retraining happens automatically without blocking API responses
-
-## Practical Benefits for Coaches
-
-1. **Immediate Response** - Training sessions are queued and processed within seconds
-2. **Continuous Monitoring** - Agent works 24/7, even outside training hours
-3. **Improved Accuracy** - Learning from feedback creates increasingly accurate fatigue predictions
-4. **Non-blocking Interface** - Coaches can submit data and check results later without waiting
-5. **Actionable Insights** - Clear recommendations: "full training," "reduce load," "complete rest," or "no action needed"
-6. **Risk Awareness** - Automatic detection of high-risk fatigue states to prevent injuries
+* **Handles Background Tasks** - Incremental learning and model retraining happens automatically in background threads
+* **Intelligent Decision Making** - Combines Neural Network predictions with rule-based classification for robust decisions
 
 ## Technical Details
 
-### Machine Learning Model
-- **Algorithm** - Scikit-learn RandomForestRegressor
-- **Target Variable** - Fatigue Score (0-100)
-- **Features** - Sleep hours, stress level, distance, sprint count, soreness, RPE
+### Neural Network Model
+- **Algorithm** - Scikit-learn MLPRegressor (Multi-layer Perceptron)
+- **Architecture** - Hidden layers with ReLU activation for non-linear pattern recognition
+- **Target Variable** - Fatigue Score (0-100 continuous regression)
+- **Input Features** - Sleep hours, stress level, distance, sprint count, soreness, RPE, injury/illness status
 - **Training Data** - Workout routine dataset with 1000+ labeled examples
+- **Learning** - Supports incremental learning (warm_start=True) for continuous model improvement
 - **Metrics** - MAE, RMSE, R² calculated after each training session
 
-### Database
-- **System** - SQL Server (ODBC connection)
-- **Main Tables** - TrainingSessions, Feedback, SystemSettings
-- **Features** - Automatic timestamps, foreign key relationships, status tracking
+### Rule-Based Risk Classification
+- **Low Risk** - Fatigue score < 40 (Player ready for full training)
+- **Medium Risk** - Fatigue score 40-60 (Player should reduce load)
+- **High Risk** - Fatigue score > 60 (Complete rest or minimal activity recommended)
 
-### Agent Configuration
-- **Scoring Runner** - Processes predictions every 10 seconds
-- **Retrain Runner** - Triggers retraining when 50+ feedback items accumulated
-- **Risk Thresholds** - Low (<40), Medium (40-60), High (>60)
-- **Exploration Rate** - 5% chance of random exploration vs exploitation
+### Database
+- **System** - SQL Server 
+- **Main Tables** - TrainingSessions, Feedback, SystemSettings
+- **Features** - Automatic timestamps, foreign key relationships, status tracking for queue management
+
+### Agent Components
+- **Scoring Runner** - Processes predictions every 10 seconds through the Neural Network
+- **Retrain Runner** - Triggers incremental retraining when 10+ feedback items accumulated
+- **Queue Service** - Manages asynchronous session processing
+- **Learning Service** - Handles feedback incorporation and model updates
 
 ## Configuration
 
 Edit `SystemSettings` table in SQL Server to adjust:
 - `GoldThreshold` - Feedback items required before retraining (default: 50)
-- `LowRiskThreshold` - Fatigue score for low risk (default: 40)
-- `MediumRiskThreshold` - Fatigue score for medium risk (default: 60)
-- `ExplorationRate` - Probability of exploration (default: 0.05)
+- `LowRiskThreshold` - Fatigue score threshold for low risk (default: 40)
+- `MediumRiskThreshold` - Fatigue score threshold for medium risk (default: 60)
+- `ExplorationRate` - Probability of exploration vs exploitation (default: 0.05)
+
+## Incremental Learning Process
+
+1. Coach submits training session data
+2. Neural Network predicts fatigue score
+3. Rule-based classifier assigns risk level
+4. Coach reviews prediction and provides feedback if incorrect
+5. Feedback is stored in database
+6. When threshold reached, retrain runner triggers
+7. Neural Network is retrained with warm_start to incorporate new knowledge
+8. Updated model becomes active for future predictions
+9. Agent improves accuracy over time
 
 ## Future Improvements
 
 - Real-time athlete wearable integration
-- Multi-model ensemble for fatigue prediction
+- Advanced Neural Network architectures (LSTM for temporal patterns)
+- Ensemble methods combining multiple neural networks
 - Advanced visualizations and trend analysis
 - Predictive injury risk modeling
 - Mobile app for on-field feedback submission
+- Transfer learning from other sports domains
 
-## License
+## Performance
 
-This project is licensed under the MIT License - see LICENSE file for details.
-
-## Author
-
-Developed as an intelligent agent system for sports science applications.
+The Neural Network learns from feedback in real-time, continuously improving prediction accuracy. The system has been tested to validate:
+- Accurate fatigue prediction from training metrics
+- Proper classification of risk levels
+- Effective learning from coach feedback
+- Autonomous operation without manual intervention
 
 ---
 
-**Note**: This system is designed to assist coaches and sports scientists in decision-making. Final decisions regarding player training loads should always consider professional medical advice and coaching expertise.
+**Note**: FatigueBalance is designed to assist coaches and sports scientists in decision-making. Final decisions regarding player training loads should always consider professional medical advice, coaching expertise, and player well-being.
+
