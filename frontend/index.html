@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FatigueAgent - AI Football Fatigue Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">⚽</div>
+                <div>
+                    <h1>FatigueAgent</h1>
+                    <p class="subtitle">AI-Powered Fatigue Monitoring</p>
+                </div>
+            </div>
+            <div class="agent-status" id="agentStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            
+            <!-- Left Panel - Input Form -->
+            <div class="panel input-panel">
+                <h2 class="panel-title">
+                    <span class="icon">📋</span>
+                    New Training Session
+                </h2>
+                
+                <form id="sessionForm" class="form">
+                    <!-- Player Name -->
+                    <div class="form-group">
+                        <label for="playerName">Player Name</label>
+                        <input type="text" id="playerName" placeholder="e.g., John Doe" required>
+                    </div>
+
+                    <!-- Position -->
+                    <div class="form-group">
+                        <label for="position">Position</label>
+                        <select id="position" required>
+                            <option value="">Select Position</option>
+                            <option value="goalkeeper">🧤 Goalkeeper</option>
+                            <option value="defender">🛡️ Defender</option>
+                            <option value="midfielder">⚙️ Midfielder</option>
+                            <option value="forward">⚡ Forward</option>
+                        </select>
+                    </div>
+
+                    <!-- Activity Type -->
+                    <div class="form-group">
+                        <label for="activityType">Activity Type</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="activityType" value="practice" checked>
+                                <span class="radio-custom">🏃 Practice</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="activityType" value="game">
+                                <span class="radio-custom">🏆 Game</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sleep Hours -->
+                    <div class="form-group">
+                        <label for="sleepHours">Sleep Hours</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="sleepHours" min="0" max="12" step="0.5" value="7" required>
+                            <span class="unit">hours</span>
+                        </div>
+                        <div class="slider-value" id="sleepValue">7.0 hours</div>
+                    </div>
+
+                    <!-- Stress Level -->
+                    <div class="form-group">
+                        <label for="stressLevel">Stress Level</label>
+                        <input type="range" id="stressLevel" min="1" max="10" value="5" class="slider">
+                        <div class="slider-labels">
+                            <span>Low (1)</span>
+                            <span id="stressValue" class="slider-value-inline">5</span>
+                            <span>High (10)</span>
+                        </div>
+                    </div>
+
+                    <!-- Distance -->
+                    <div class="form-group">
+                        <label for="distance">Distance Covered</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="distance" min="0" max="20" step="0.1" value="8" required>
+                            <span class="unit">km</span>
+                        </div>
+                    </div>
+
+                    <!-- Sprint Count -->
+                    <div class="form-group">
+                        <label for="sprintCount">Sprint Count</label>
+                        <input type="number" id="sprintCount" min="0" max="100" value="20" required>
+                    </div>
+
+                    <!-- Optional Fields Toggle -->
+                    <div class="form-group">
+                        <button type="button" class="toggle-optional" id="toggleOptional">
+                            <span>➕ Advanced Fields (Optional)</span>
+                        </button>
+                    </div>
+
+                    <!-- Optional Fields (Hidden by default) -->
+                    <div id="optionalFields" class="optional-fields" style="display: none;">
+                        
+                        <!-- Soreness -->
+                        <div class="form-group">
+                            <label for="soreness">Soreness</label>
+                            <input type="range" id="soreness" min="1" max="10" value="5" class="slider">
+                            <div class="slider-labels">
+                                <span>None (1)</span>
+                                <span id="sorenessValue" class="slider-value-inline">5</span>
+                                <span>Severe (10)</span>
+                            </div>
+                        </div>
+
+                        <!-- RPE -->
+                        <div class="form-group">
+                            <label for="rpe">RPE (Rate of Perceived Exertion)</label>
+                            <input type="range" id="rpe" min="1" max="10" value="5" class="slider">
+                            <div class="slider-labels">
+                                <span>Easy (1)</span>
+                                <span id="rpeValue" class="slider-value-inline">5</span>
+                                <span>Max (10)</span>
+                            </div>
+                        </div>
+
+                        <!-- Injury/Illness -->
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="injuryIllness">
+                                <span class="checkbox-custom">🤕 Recent Injury/Illness</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="btn-text">Analyze Fatigue</span>
+                        <span class="btn-loader" style="display: none;">⏳ Processing...</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="panel results-panel">
+                <h2 class="panel-title">
+                    <span class="icon">📊</span>
+                    Analysis Results
+                </h2>
+
+                <!-- Initial State -->
+                <div id="initialState" class="initial-state">
+                    <div class="empty-icon">📈</div>
+                    <p>No analysis yet</p>
+                    <p class="hint">Submit a training session to see results</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="loading-state" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing fatigue levels...</p>
+                    <p class="hint">Session ID: <span id="loadingSessionId"></span></p>
+                </div>
+
+                <!-- Results State -->
+                <div id="resultsState" class="results-state" style="display: none;">
+                    
+                    <!-- Fatigue Gauge -->
+                    <div class="fatigue-gauge">
+                        <div class="gauge-container">
+                            <svg viewBox="0 0 200 120" class="gauge-svg">
+                                <defs>
+                                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                        <stop offset="40%" style="stop-color:#fbbf24;stop-opacity:1" />
+                                        <stop offset="70%" style="stop-color:#f97316;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <!-- Background arc -->
+                                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e5e7eb" stroke-width="20" stroke-linecap="round"/>
+                                <!-- Progress arc -->
+                                <path id="gaugeProgress" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                                <!-- Needle -->
+                                <line id="gaugeNeedle" x1="100" y1="100" x2="100" y2="40" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="100" cy="100" r="8" fill="#1f2937"/>
+                            </svg>
+                            <div class="gauge-value">
+                                <div class="gauge-score" id="fatigueScore">0</div>
+                                <div class="gauge-label">Fatigue Score</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Level Badge -->
+                    <div class="risk-badge" id="riskBadge">
+                        <div class="risk-icon">⚠️</div>
+                        <div>
+                            <div class="risk-level" id="riskLevel">MEDIUM</div>
+                            <div class="risk-subtitle">Risk Level</div>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Action -->
+                    <div class="action-card" id="actionCard">
+                        <div class="action-icon" id="actionIcon">💡</div>
+                        <div class="action-content">
+                            <div class="action-title">Recommended Action</div>
+                            <div class="action-text" id="actionText">Monitor closely</div>
+                        </div>
+                    </div>
+
+                    <!-- Confidence & Details -->
+                    <div class="details-grid" style="display: none;">
+                        <div class="detail-item">
+                            <div class="detail-label">Confidence</div>
+                            <div class="detail-value">
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                                </div>
+                                <span id="confidenceValue">0%</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Session ID</div>
+                            <div class="detail-value" id="sessionId">#0</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Processed At</div>
+                            <div class="detail-value" id="processedAt">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Analyze Another Button -->
+                    <button class="btn-secondary" id="resetBtn">
+                        ↻ Analyze Another Session
+                    </button>
+
+                  <!-- FEEDBACK SECTION - IMPROVED! -->
+                    <div class="feedback-section">
+                        <h3 class="feedback-title">
+                            <span class="icon">💬</span>
+                            Provide Feedback (Help Agent Learn)
+                        </h3>
+                        
+                        <form id="feedbackForm" class="feedback-form">
+                            <!-- Was recommendation correct? -->
+                            <div class="form-group">
+                                <label>Was the agent's recommendation appropriate?</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="feedbackCorrect" value="true" checked>
+                                        <span class="radio-custom">✅ Yes, correct</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="feedbackCorrect" value="false">
+                                        <span class="radio-custom">❌ No, incorrect</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- If incorrect, what should it be? -->
+                            <div id="correctActionSection" style="display: none;">
+                                <div class="form-group">
+                                    <label for="correctAction">What do you think the recommended action should have been ?</label>
+                                    <select id="correctAction" class="feedback-select">
+                                        <option value="">Select correct action...</option>
+                                        <option value="cleared">✅ Cleared to Play</option>
+                                        <option value="monitor">👀 Monitor Closely</option>
+                                        <option value="reduce_intensity">⚡ Reduce Training Intensity</option>
+                                        <option value="rest_recommended">🛌 Rest Recommended</option>
+                                        <option value="must_rest">🚫 Must Rest</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="estimatedFatigue">Your subjective assessment of Fatigue Level :</label>
+                                    <select id="estimatedFatigue" class="feedback-select">
+                                        <option value="">Select level...</option>
+                                        <option value="low">🟢 Low Fatigue (0-40)</option>
+                                        <option value="medium">🟡 Medium Fatigue (40-60)</option>
+                                        <option value="high">🟠 High Fatigue (60-80)</option>
+                                        <option value="critical">🔴 Critical Fatigue (80-100)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Real Outcome (Optional) -->
+                            <div class="form-group">
+                                <label>What actually happened? (Optional)</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label-small">
+                                        <input type="checkbox" id="outcomeInjured">
+                                        <span>🤕 Player got injured</span>
+                                    </label>
+                                    <label class="checkbox-label-small">
+                                        <input type="checkbox" id="outcomeExhausted">
+                                        <span>😓 Player was visibly exhausted</span>
+                                    </label>
+                                    <label class="checkbox-label-small">
+                                        <input type="checkbox" id="outcomePerformedWell">
+                                        <span>⭐ Player performed excellently</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Comment -->
+                            <div class="form-group">
+                                <label for="feedbackComment">Additional Notes (Optional)</label>
+                                <textarea id="feedbackComment" rows="3" 
+                                          placeholder="e.g., Player complained about muscle soreness..."></textarea>
+                            </div>
+
+                            <!-- Submit Feedback Button -->
+                            <button type="submit" class="btn-submit" id="submitFeedbackBtn">
+                                <span class="btn-text">📤 Submit Feedback</span>
+                                <span class="btn-loader" style="display: none;">⏳ Saving...</span>
+                            </button>
+
+                            <div id="feedbackSuccess" class="feedback-success" style="display: none;">
+                                ✅ Feedback saved! Agent will learn from this.
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" class="error-state" style="display: none;">
+                    <div class="error-icon">❌</div>
+                    <p class="error-message" id="errorMessage">Something went wrong</p>
+                    <button class="btn-secondary" id="retryBtn">↻ Try Again</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Sessions Processed</div>
+                <div class="stat-value" id="processedCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Avg Processing Time</div>
+                <div class="stat-value" id="avgTime">0ms</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Queue Size</div>
+                <div class="stat-value" id="queueSize">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

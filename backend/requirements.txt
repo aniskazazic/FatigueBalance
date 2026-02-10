@@ -1,0 +1,9 @@
+# requirements.txt 
+fastapi
+uvicorn
+pydantic
+pyodbc
+scikit-learn
+joblib
+numpy
+pandas
