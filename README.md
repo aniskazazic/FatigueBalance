@@ -110,40 +110,6 @@ This test script:
 - Verifies that agent predictions improved based on feedback
 - Validates the complete Sense→Think→Act→Learn cycle
 
-## Project Structure
-
-```
-.
-├── backend/
-│   ├── scripts/
-│   │   ├── train_from_csv.py      # Train Neural Network from CSV
-│   │   ├── init_db.py             # Initialize SQL Server database
-│   │   └── test_agent.py          # Test agent learning capability
-│   ├── application/
-│   │   ├── agent_manager.py       # Core agent orchestration
-│   │   ├── runners/               # Scoring and retraining runners
-│   │   └── services/              # Business logic services
-│   ├── domain/
-│   │   └── entities.py            # Domain models
-│   ├── infrastructure/
-│   │   ├── database.py            # Database interactions
-│   │   ├── models.py              
-│   │   └── ml/
-│   │       └── classifier.py      # Neural Network wrapper (MLPRegressor)
-│   ├── web/
-│   │   ├── main.py                # FastAPI application
-│   │   └── dtos.py                # Request/response models
-│   ├── bootstrap.py               # Dependency injection setup
-│   ├── main.py                    # Entry point
-│   ├── fatigue_model.joblib       # Trained Neural Network model
-│   └── requirements.txt           # Python dependencies
-├── frontend/
-│   ├── index.html                 # Main HTML/interface
-│   ├── script.js                  # Frontend logic
-│   └── style.css                  # Styling
-└── README.md
-```
-
 ## Why It's an Agent (Not Just an ML Model)
 
 Unlike traditional ML APIs that process requests synchronously, FatigueBalance:
