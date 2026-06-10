@@ -1,5 +1,8 @@
 # backend/infrastructure/database.py - FULL FIXED VERSION
-import pyodbc
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
 from datetime import datetime
 from typing import Optional, Dict, Any
 import logging
@@ -26,6 +29,9 @@ def create_database_if_not_exists():
         
         logger.info(f"🔗 Povezivanje na SQL Server: {DB_SERVER}")
         # KLJUČNA PROMJENA: autocommit=True
+        if pyodbc is None:
+            logger.error("❌ pyodbc is not installed; database operations are unavailable.")
+            return False
         master_conn = pyodbc.connect(master_conn_str, autocommit=True)
         cursor = master_conn.cursor()
         
@@ -61,6 +67,8 @@ def get_connection():
         f"Trusted_Connection=yes;"
         f"TrustServerCertificate=yes;"
     )
+    if pyodbc is None:
+        raise ImportError("pyodbc is required for database connectivity but is not installed.")
     return pyodbc.connect(conn_str)
 
 def init_database():
@@ -103,7 +111,8 @@ def init_database():
                     FatigueScore FLOAT NULL,
                     RiskLevel NVARCHAR(20) NULL,
                     Status NVARCHAR(20) DEFAULT 'queued',
-                    Confidence FLOAT NULL
+                    Confidence FLOAT NULL,
+                    InjuryProb FLOAT NULL
                 )
                 PRINT 'Tabela TrainingSessions kreirana'
             END
@@ -121,6 +130,10 @@ def init_database():
                 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
                               WHERE TABLE_NAME = 'TrainingSessions' AND COLUMN_NAME = 'InjuryIllness')
                     ALTER TABLE TrainingSessions ADD InjuryIllness BIT NULL
+
+                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+                              WHERE TABLE_NAME = 'TrainingSessions' AND COLUMN_NAME = 'InjuryProb')
+                    ALTER TABLE TrainingSessions ADD InjuryProb FLOAT NULL
                 
                 PRINT 'Tabela TrainingSessions već postoji (ažurirane nove kolone ako su potrebne)'
             END
@@ -220,7 +233,7 @@ def save_session(player_name: str, position: str, activity_type: str,
                  sleep_hours: float, stress_level: int, distance_km: float,
                  sprint_count: int, predicted_action: str = None,
                  fatigue_score: float = None, risk_level: str = None,
-                 confidence: float = None) -> Optional[int]:
+                 confidence: float = None, injury_prob: float = None) -> Optional[int]:
     """Sačuvaj sesiju u bazu i vrati ID"""
     conn = None
     try:
@@ -231,11 +244,11 @@ def save_session(player_name: str, position: str, activity_type: str,
             INSERT INTO TrainingSessions 
             (Timestamp, PlayerName, Position, ActivityType, SleepHours, 
              StressLevel, DistanceKm, SprintCount, PredictedAction, 
-             FatigueScore, RiskLevel, Confidence, Status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processed')
+             FatigueScore, RiskLevel, Confidence, InjuryProb, Status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processed')
         """, (datetime.now(), player_name, position, activity_type,
               sleep_hours, stress_level, distance_km, sprint_count,
-              predicted_action, fatigue_score, risk_level, confidence))
+              predicted_action, fatigue_score, risk_level, confidence, injury_prob))
         
         conn.commit()
         
@@ -290,7 +303,7 @@ def get_session_status(session_id: int) -> Optional[Dict[str, Any]]:
         
         cursor.execute("""
             SELECT Id, Timestamp, PredictedAction, FatigueScore, 
-                   RiskLevel, Confidence, Status
+                   RiskLevel, Confidence, Status, InjuryProb
             FROM TrainingSessions 
             WHERE Id = ?
         """, session_id)
@@ -305,7 +318,8 @@ def get_session_status(session_id: int) -> Optional[Dict[str, Any]]:
                 'fatigue_score': row[3],
                 'risk_level': row[4],
                 'confidence': row[5],
-                'status': row[6]
+                'status': row[6],
+                'injury_prob': row[7]
             }
         return None
         
@@ -326,7 +340,7 @@ def get_session_details(session_id: int) -> Optional[Dict[str, Any]]:
         cursor.execute("""
             SELECT Id, Timestamp, PlayerName, Position, ActivityType,
                    SleepHours, StressLevel, DistanceKm, SprintCount,
-                   PredictedAction, FatigueScore, RiskLevel, Confidence, Status
+                   PredictedAction, FatigueScore, RiskLevel, Confidence, Status, InjuryProb
             FROM TrainingSessions 
             WHERE Id = ?
         """, session_id)
@@ -348,7 +362,8 @@ def get_session_details(session_id: int) -> Optional[Dict[str, Any]]:
                 'fatigue_score': row[10],
                 'risk_level': row[11],
                 'confidence': row[12],
-                'status': row[13]
+                'status': row[13],
+                'injury_prob': row[14]
             }
         return None
         

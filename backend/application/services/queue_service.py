@@ -108,7 +108,7 @@ class QueueService:
             conn.close()
     
     def mark_as_processed(self, session_id: int, action: str, 
-                         fatigue_score: float, risk_level: str, confidence: float):
+                         fatigue_score: float, risk_level: str, confidence: float, injury_prob: float = None):
         """Označi sesiju kao obrađenu"""
         conn = get_connection()
         cursor = conn.cursor()
@@ -120,12 +120,13 @@ class QueueService:
                     FatigueScore = ?,
                     RiskLevel = ?,
                     Confidence = ?,
+                    InjuryProb = ?,
                     Status = 'processed'
                 WHERE Id = ?
-            """, (action, fatigue_score, risk_level, confidence, session_id))
+            """, (action, fatigue_score, risk_level, confidence, injury_prob, session_id))
             
             conn.commit()
-            logger.info(f"✅ Sesija #{session_id} processed: {action} (fatigue: {fatigue_score:.1f})")
+            logger.info(f"✅ Sesija #{session_id} processed: {action} (fatigue: {fatigue_score:.1f}, injury_prob: {injury_prob:.2f})")
             
         except Exception as e:
             conn.rollback()

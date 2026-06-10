@@ -82,7 +82,12 @@ class TrainingSession:
         )
     
     def extract_features(self) -> list:
-        """Ekstraktuj features za ML model - UPDATED"""
+        """Ekstraktuj features za ML model - UPDATED.
+
+        Note: the returned list includes `injury_illness` as the last element.
+        The fatigue regressor intentionally ignores this value to avoid
+        potential data leakage, while the injury risk model may use it.
+        """
         return [
             self.position.value,
             self.activity_type.value,
@@ -105,6 +110,7 @@ class FatiguePrediction:
     confidence: float
     requires_review: bool = False
     is_exploring: bool = False
+    injury_prob: float = 0.0
 
 @dataclass
 class SystemSettings:

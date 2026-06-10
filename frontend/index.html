@@ -232,7 +232,7 @@
                     </div>
 
                     <!-- Confidence & Details -->
-                    <div class="details-grid" style="display: none;">
+                    <div class="details-grid">
                         <div class="detail-item">
                             <div class="detail-label">Confidence</div>
                             <div class="detail-value">
@@ -242,6 +242,11 @@
                                 <span id="confidenceValue">0%</span>
                             </div>
                         </div>
+
+                        <div class="detail-item">
+    <div class="detail-label">Injury Risk</div>
+    <div class="detail-value" id="injuryRisk">-</div>
+</div>
                         <div class="detail-item">
                             <div class="detail-label">Session ID</div>
                             <div class="detail-value" id="sessionId">#0</div>
@@ -367,6 +372,26 @@
             <div class="stat-item">
                 <div class="stat-label">Queue Size</div>
                 <div class="stat-value" id="queueSize">0</div>
+            </div>
+        </div>
+
+        <div class="ml-panel" id="mlPanel">
+            <h3>Mašinsko učenje — modeli</h3>
+            <div class="ml-grid">
+                <div class="ml-card">
+                    <strong>Umor</strong>
+                    <span id="mlFatigueAlgo">MLP Regressor</span>
+                </div>
+                <div class="ml-card">
+                    <strong>Povreda</strong>
+                    <span id="mlInjuryAlgo">Logistic Regression</span>
+                    <small id="mlInjuryMetrics"></small>
+                </div>
+                <div class="ml-card">
+                    <strong>Rizik</strong>
+                    <span id="mlRiskAlgo">Logistic Regression</span>
+                    <small id="mlRiskMetrics"></small>
+                </div>
             </div>
         </div>
     </div>

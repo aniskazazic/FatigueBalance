@@ -7,6 +7,31 @@ from infrastructure.database import get_connection
 
 logger = logging.getLogger(__name__)
 
+ACTION_TO_FATIGUE = {
+    "cleared": 25.0,
+    "monitor": 50.0,
+    "reduce_intensity": 65.0,
+    "rest_recommended": 75.0,
+    "must_rest": 90.0,
+    "low": 20.0,
+    "medium": 50.0,
+    "high": 70.0,
+    "critical": 90.0,
+}
+
+
+def _parse_feedback_labels(user_label: str) -> tuple[float, str]:
+    """Vrati (fatigue_score, raw_label) iz broja ili akcije/rizika."""
+    raw = str(user_label).strip()
+    try:
+        return float(raw), raw
+    except ValueError:
+        key = raw.lower()
+        if key in ACTION_TO_FATIGUE:
+            return ACTION_TO_FATIGUE[key], raw
+        raise ValueError(f"Unrecognized feedback label: {user_label}")
+
+
 @dataclass
 class RetrainTickResult:
     """Rezultat retrain tick-a"""
@@ -22,8 +47,9 @@ class RetrainAgentRunner:
     SENSE → THINK → ACT → LEARN
     """
     
-    def __init__(self, classifier, gold_threshold: int = 10):
+    def __init__(self, classifier, risk_classifier=None, gold_threshold: int = 10):
         self.classifier = classifier
+        self.risk_classifier = risk_classifier
         self.gold_threshold = gold_threshold
         self.last_retrain_count = 0
         self.retrain_count = 0
@@ -154,7 +180,7 @@ class RetrainAgentRunner:
             for row in rows:
                 try:
                     feedback_id = row[0]
-                    user_label = float(row[1])
+                    fatigue_label, raw_label = _parse_feedback_labels(row[1])
                     
                     features = [
                         row[2],  # Position
@@ -168,8 +194,10 @@ class RetrainAgentRunner:
                         float(row[10]) if row[10] is not None else 0.0  # InjuryIllness
                     ]
                     
-                    # KLJUČNO: Pozovi train_single za incremental learning
-                    success = self.classifier.train_single(features, user_label)
+                    success = self.classifier.train_single(features, fatigue_label)
+                    
+                    if self.risk_classifier is not None:
+                        self.risk_classifier.add_feedback_example(features, raw_label)
                     
                     if success:
                         trained_count += 1
@@ -183,6 +211,9 @@ class RetrainAgentRunner:
                 except Exception as e:
                     logger.error(f"❌ Failed to train on feedback ID {row[0]}: {e}")
                     continue
+            
+            if self.risk_classifier is not None and self.risk_classifier.retrain_on_feedback():
+                logger.info("✅ Risk classifier updated with feedback examples")
             
             # 🌟 AŽURIRAJ LASTRETAINDATE U SystemSettings 🌟
             cursor.execute("""

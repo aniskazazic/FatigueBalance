@@ -74,7 +74,12 @@ The system improves over time through user feedback (incremental learning). When
    python scripts/train_from_csv.py
    ```
 
-6. Start the backend server:
+6. (Optional) Run extended ML analysis and diagnostics:
+   ```bash
+   python scripts/fatigue_ml_analysis.py
+   ```
+
+7. Start the backend server:
    ```bash
    python main.py
    ```

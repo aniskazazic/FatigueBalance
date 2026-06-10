@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('📡 API Base URL:', API_BASE);
     initSliders();
     loadAgentStatus();
+    loadMLModels();
     setInterval(loadAgentStatus, 5000);
 });
 
@@ -194,6 +195,7 @@ function showResultsState(results) {
     errorState.style.display = 'none';
     initialState.style.display = 'none';
     resultsState.style.display = 'block';
+    document.querySelector('.details-grid').style.display = 'grid';
     
     updateResults(results);
 }
@@ -230,7 +232,7 @@ function resetToInitial() {
     toggleOptionalBtn.querySelector('span').textContent =
         '➕ Advanced Fields (Optional)';
 
-    // 🔑 OVO FALI
+    document.querySelector('.details-grid').style.display = 'none';
     syncSliderLabels();
 }
 
@@ -289,6 +291,22 @@ function updateResults(data) {
     riskBadge.className = 'risk-badge ' + risk_level;
     riskLevelText.textContent = risk_level.toUpperCase();
     
+const injuryProb = data.injury_prob || 0;
+const injuryPercent = Math.round(injuryProb * 100);
+const injuryHtml = `${injuryPercent}%`;
+document.getElementById('injuryRisk').innerHTML = injuryHtml;
+
+// Dodajemo i boju
+const injuryElem = document.getElementById('injuryRisk');
+if (injuryProb > 0.7) {
+    injuryElem.style.color = '#ef4444';
+    injuryElem.style.fontWeight = 'bold';
+} else if (injuryProb > 0.4) {
+    injuryElem.style.color = '#f97316';
+} else {
+    injuryElem.style.color = '#10b981';
+}
+
     const riskIcons = {
         low: '✅',
         medium: '⚠️',
@@ -343,6 +361,35 @@ function updateGauge(score) {
 // ============================================================================
 // LOAD AGENT STATUS - SA LEARN METRIKAMA
 // ============================================================================
+
+async function loadMLModels() {
+    try {
+        const response = await fetch(`${API_BASE}/ml/models`);
+        if (!response.ok) return;
+        const data = await response.json();
+
+        document.getElementById('mlFatigueAlgo').textContent =
+            data.fatigue_model?.algorithm || 'MLP Regressor';
+
+        const injuryMetrics = data.injury_model?.metrics;
+        document.getElementById('mlInjuryAlgo').textContent =
+            data.injury_model?.algorithm || 'Logistic Regression';
+        if (injuryMetrics) {
+            document.getElementById('mlInjuryMetrics').textContent =
+                `AUC ${(injuryMetrics.roc_auc * 100).toFixed(0)}% · acc ${(injuryMetrics.accuracy * 100).toFixed(0)}%`;
+        }
+
+        const riskMetrics = data.risk_model?.metrics;
+        document.getElementById('mlRiskAlgo').textContent =
+            data.risk_model?.algorithm || 'Logistic Regression';
+        if (riskMetrics) {
+            document.getElementById('mlRiskMetrics').textContent =
+                `acc ${(riskMetrics.accuracy * 100).toFixed(0)}% · F1 ${(riskMetrics.macro_f1 * 100).toFixed(0)}%`;
+        }
+    } catch (error) {
+        console.warn('ML models panel unavailable:', error);
+    }
+}
 
 async function loadAgentStatus() {
     try {

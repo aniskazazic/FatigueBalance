@@ -1,0 +1,16 @@
+{
+  "risk_logistic_regression": {
+    "accuracy": 0.64375,
+    "macro_f1": 0.6190267578994214,
+    "train_size": 992,
+    "test_size": 160
+  },
+  "injury_logistic_regression": {
+    "accuracy": 0.75625,
+    "f1": 0.09302325581395349,
+    "roc_auc": 0.7148387096774194,
+    "train_size": 640,
+    "test_size": 160,
+    "positive_rate": 0.02875
+  }
+}

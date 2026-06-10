@@ -2,11 +2,12 @@
 import random
 from typing import Tuple
 from domain.entities import TrainingSession, PlayerAction, RiskLevel, FatiguePrediction
+from infrastructure.ml.risk_classifier import RiskClassifier
 
 class FatigueScoringService:
     """Servis za scoring - implementira THINK fazu"""
     
-    def __init__(self, classifier, exploration_rate: float = 0.05):
+    def __init__(self, classifier, exploration_rate: float = 0.05, risk_classifier: RiskClassifier = None):
         self.classifier = classifier
         self.exploration_rate = exploration_rate
         
@@ -14,6 +15,7 @@ class FatigueScoringService:
         self.low_threshold = 40.0
         self.medium_threshold = 60.0
         self.high_threshold = 80.0
+        self.risk_classifier = risk_classifier if risk_classifier is not None else RiskClassifier()
     
     def score_session(self, session: TrainingSession) -> FatiguePrediction:
         """
@@ -26,12 +28,36 @@ class FatigueScoringService:
         
         # ML predikcija fatigue score-a (0-100)
         fatigue_score, confidence = self.classifier.predict(features)
-        
-        # Klasifikuj risk level na osnovu score-a
-        risk_level = self._classify_risk(fatigue_score)
-        
+
+        # Predikcija vjerovatnoće povrede
+        injury_prob = self.classifier.predict_injury_prob(features)
+
+        # Klasifikuj risk level preko treniranog RiskClassifier kada je dostupan
+        if hasattr(self, "risk_classifier") and self.risk_classifier is not None:
+            try:
+                risk_level = self.risk_classifier.predict_risk_level(features)
+            except Exception:
+                risk_level = self._classify_risk(fatigue_score, injury_prob)
+        else:
+            risk_level = self._classify_risk(fatigue_score, injury_prob)
+
         # Odredi akciju na osnovu risk levela
         ml_action = self._risk_to_action(risk_level)
+
+        # Override rule 1: ako je injury_prob JAKO visok (>0.7) -> MUST_REST ODMAH
+        if injury_prob > 0.7:
+            ml_action = PlayerAction.MUST_REST
+            risk_level = RiskLevel.CRITICAL
+        
+        # Override rule 2: ako je fatigue >70 i injury_prob > 0.5 -> MUST_REST
+        elif fatigue_score > 70.0 and injury_prob > 0.5:
+            ml_action = PlayerAction.MUST_REST
+            risk_level = RiskLevel.CRITICAL
+        
+        # Override rule 3: ako je fatigue >80 -> MUST_REST  (ekstremni slučaj)
+        elif fatigue_score > 80.0:
+            ml_action = PlayerAction.MUST_REST
+            risk_level = RiskLevel.CRITICAL
         
         # Exploration: nasumično probaj drugu akciju
         is_exploring = random.random() < self.exploration_rate
@@ -43,7 +69,7 @@ class FatigueScoringService:
             source = "ml"
         
         # Da li zahtijeva review (nesigurni slučajevi)
-        requires_review = self._requires_review(session, fatigue_score, confidence)
+        requires_review = self._requires_review(session, fatigue_score, confidence, injury_prob)
         
         return FatiguePrediction(
             session_id=session.id,
@@ -52,16 +78,28 @@ class FatigueScoringService:
             risk_level=risk_level,
             confidence=confidence,
             requires_review=requires_review,
-            is_exploring=is_exploring
+            is_exploring=is_exploring,
+            injury_prob=injury_prob 
         )
     
-    def _classify_risk(self, fatigue_score: float) -> RiskLevel:
-        """Klasifikuj risk level na osnovu fatigue score-a"""
-        if fatigue_score < self.low_threshold:
+    def _classify_risk(self, fatigue_score: float, injury_prob: float = 0.0) -> RiskLevel:
+        """Klasifikuj risk level na osnovu fatigue score-a i injury_prob"""
+        # Ako je injury risk jako visok, odmah klasifikuj kao CRITICAL
+        if injury_prob > 0.7:
+            return RiskLevel.CRITICAL
+        
+        # Ako je injury risk visok, povećaj rizik od fatigua-a
+        if injury_prob > 0.5:
+            # Smanji pragove kada je injury risk visok
+            adjusted_fatigue = fatigue_score + (injury_prob * 20.0)
+        else:
+            adjusted_fatigue = fatigue_score
+        
+        if adjusted_fatigue < self.low_threshold:
             return RiskLevel.LOW
-        elif fatigue_score < self.medium_threshold:
+        elif adjusted_fatigue < self.medium_threshold:
             return RiskLevel.MEDIUM
-        elif fatigue_score < self.high_threshold:
+        elif adjusted_fatigue < self.high_threshold:
             return RiskLevel.HIGH
         else:
             return RiskLevel.CRITICAL
@@ -83,11 +121,15 @@ class FatigueScoringService:
         return random.choice(other_actions) if other_actions else current_action
     
     def _requires_review(self, session: TrainingSession, fatigue_score: float,
-                        confidence: float) -> bool:
+                        confidence: float, injury_prob: float = 0.0) -> bool:
         """Odluči da li slučaj zahtijeva human review"""
         
         # Nizak confidence
         if confidence < 0.65:
+            return True
+        
+        # Visok injury risk - trebam review
+        if injury_prob > 0.6:
             return True
         
         # Ekstremne vrijednosti

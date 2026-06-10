@@ -16,47 +16,21 @@ ODGOVORNOSTI SAMO:
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
-from typing import Optional
 import logging
 from datetime import datetime
-from .dtos import SessionRequest, FeedbackRequest
+from .dtos import (
+    SessionRequest,
+    FeedbackRequest,
+    QueueResponse,
+    PredictionResultResponse,
+    AgentStatusResponse,
+    MLModelsResponse,
+)
+from infrastructure.ml.metrics_store import load_metrics
 from domain.entities import TrainingSession
 from infrastructure.database import save_feedback, get_session_status, get_connection
 
 logger = logging.getLogger(__name__)
-
-class QueueResponse(BaseModel):
-    status: str
-    session_id: int
-    message: str
-    timestamp: str
-    estimated_wait_time_ms: Optional[float] = None
-
-class PredictionResultResponse(BaseModel):
-    session_id: int
-    status: str
-    predicted_action: Optional[str] = None
-    fatigue_score: Optional[float] = None
-    risk_level: Optional[str] = None
-    confidence: Optional[float] = None
-    processed_at: Optional[str] = None
-    processing_time_ms: Optional[float] = None
-    error: Optional[str] = None
-
-class AgentStatusResponse(BaseModel):
-    is_running: bool
-    processed_count: int
-    avg_processing_time_ms: float
-    queue_size: int = 0
-    # LEARN metrike
-    avg_fatigue_score: float = 0
-    avg_confidence: float = 0
-    exploration_count: int = 0
-    review_needed_count: int = 0
-    # Retrain metrike
-    retrain_count: int = 0
-    gold_threshold: int = 0
 
 def create_fastapi_app(system_container):
     """
@@ -189,9 +163,10 @@ def create_fastapi_app(system_container):
                     fatigue_score=session_status['fatigue_score'],
                     risk_level=session_status['risk_level'],
                     confidence=session_status['confidence'],
+                    injury_prob=session_status.get('injury_prob'),
                     processed_at=session_status['timestamp'].isoformat() if session_status['timestamp'] else None
                 )
-            
+
             return PredictionResultResponse(
                 session_id=session_id,
                 status=session_status['status'],
@@ -232,6 +207,40 @@ def create_fastapi_app(system_container):
             logger.error(f"❌ Greška: {e}")
             raise HTTPException(status_code=500, detail=str(e))
     
+    @app.get("/ml/models", response_model=MLModelsResponse)
+    async def get_ml_models(container = Depends(get_container)):
+        """Pregled algoritama, feature-a i evaluacionih metrika."""
+        classifier = container.get_classifier()
+        agent_manager = container.get_agent_manager()
+        risk_classifier = getattr(agent_manager, "risk_classifier", None)
+
+        fatigue_info = classifier.get_model_info()
+        injury_info = fatigue_info.get("injury_model", {})
+        risk_info = risk_classifier.get_model_info() if risk_classifier else {}
+
+        return MLModelsResponse(
+            fatigue_model={
+                "algorithm": fatigue_info.get("model_type"),
+                "task": "regression (fatigue score 0-100)",
+                "features": fatigue_info.get("features"),
+                "incremental_learning": fatigue_info.get("supports_incremental"),
+            },
+            injury_model={
+                "algorithm": injury_info.get("algorithm", "LogisticRegression"),
+                "task": "binary classification (injury probability)",
+                "features": injury_info.get("features"),
+                "metrics": injury_info.get("metrics"),
+            },
+            risk_model={
+                "algorithm": risk_info.get("model_type", "LogisticRegression"),
+                "task": "multiclass classification (low/medium/high/critical)",
+                "features": risk_info.get("trained_columns"),
+                "metrics": risk_info.get("metrics"),
+                "feature_importance": risk_info.get("feature_importance"),
+            },
+            evaluation_metrics=load_metrics(),
+        )
+
     @app.get("/agent/status", response_model=AgentStatusResponse)
     async def get_agent_status(agent_manager = Depends(get_agent_manager)):
         """Dohvati status agenata sa LEARN metrikama"""

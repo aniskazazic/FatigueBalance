@@ -14,6 +14,7 @@ from .services.scoring_service import FatigueScoringService
 from .runners.scoring_runner import ScoringAgentRunner
 from .runners.retrain_runner import RetrainAgentRunner
 from infrastructure.ml.classifier import FatigueClassifier
+from infrastructure.ml.risk_classifier import RiskClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -56,18 +57,21 @@ class AgentManager:
         
         # Kreiraj servise
         self.queue_service = QueueService()
+        self.risk_classifier = RiskClassifier()
         self.scoring_service = FatigueScoringService(
-            self.classifier, 
-            exploration_rate=exploration_rate
+            self.classifier,
+            exploration_rate=exploration_rate,
+            risk_classifier=self.risk_classifier
         )
         
         # Kreiraj runnere
         self.scoring_runner = ScoringAgentRunner(
-            self.queue_service, 
+            self.queue_service,
             self.scoring_service
         )
         self.retrain_runner = RetrainAgentRunner(
-            self.classifier, 
+            self.classifier,
+            risk_classifier=self.risk_classifier,
             gold_threshold=gold_threshold
         )
         
@@ -195,10 +199,7 @@ class AgentManager:
             "scoring_agent": scoring_status,
             "retrain_agent": retrain_status
         }
-    
-    def get_queue_service(self) -> Optional[QueueService]:
-        """Dohvati queue service (za web layer)"""
-        return self.queue_service
+
 
     def get_queue_service(self):
         """Vrati queue service (za web layer dependency)"""

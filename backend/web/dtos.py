@@ -68,6 +68,7 @@ class PredictionResultResponse(BaseModel):
     processed_at: Optional[str] = None
     processing_time_ms: Optional[float] = None
     error: Optional[str] = None
+    injury_prob: Optional[float] = None
 
 class AgentStatusResponse(BaseModel):
     """Status agenta"""
@@ -75,3 +76,17 @@ class AgentStatusResponse(BaseModel):
     processed_count: int
     avg_processing_time_ms: float
     queue_size: int = 0
+    avg_fatigue_score: Optional[float] = None
+    avg_confidence: Optional[float] = None
+    exploration_count: Optional[int] = None
+    review_needed_count: Optional[int] = None
+    retrain_count: Optional[int] = None
+    gold_threshold: Optional[int] = None
+
+
+class MLModelsResponse(BaseModel):
+    """Pregled ML modela i metrika (za predmet Mašinsko učenje)"""
+    fatigue_model: dict
+    injury_model: dict
+    risk_model: dict
+    evaluation_metrics: dict

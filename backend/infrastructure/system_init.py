@@ -32,6 +32,10 @@ class SystemContainer:
     def get_agent_manager(self):
         """Vrati agent manager"""
         return self._agent_manager
+
+    def get_classifier(self) -> FatigueClassifier:
+        """Vrati fatigue/injury ML klasifikator"""
+        return self.classifier
     
     def is_ready(self) -> bool:
         """Provjeri da li je sistem spreman"""

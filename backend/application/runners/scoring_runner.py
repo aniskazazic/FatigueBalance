@@ -79,7 +79,8 @@ class ScoringAgentRunner:
             action=prediction.action.value,
             fatigue_score=prediction.fatigue_score,
             risk_level=prediction.risk_level.value,
-            confidence=prediction.confidence
+            confidence=prediction.confidence,
+            injury_prob=prediction.injury_prob
         )
         
         processing_time = (time.time() - start_time) * 1000  # u ms
