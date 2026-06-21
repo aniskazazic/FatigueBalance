@@ -115,6 +115,37 @@ This test script:
 - Verifies that agent predictions improved based on feedback
 - Validates the complete Sense→Think→Act→Learn cycle
 
+
+## ML Analysis Pipeline
+
+The repository includes a standalone analysis script (`fatigue_ml_pipeline.py`) used for offline 
+model experimentation and validation on the `Workout_Routine_Dirty.csv` dataset (800 records).
+
+The script covers:
+- Exploratory Data Analysis (EDA) and descriptive statistics
+- Feature engineering (Stress x RPE interaction, Distance/Sleep ratio)
+- Fatigue score regression: Random Forest and MLP, tuned via GridSearchCV, with learning curves
+- Risk level classification (4-class) and Injury/Illness classification, with SMOTE for class imbalance
+- Stacking ensemble combining regression and classification models
+- K-Means clustering for athlete grouping
+- Feature importance analysis
+- Final summary report with evaluation metrics (MAE, RMSE, R2, F1, ROC-AUC, silhouette score)
+
+> Note: this script is used for offline analysis and model comparison; it is separate from the 
+> live MLPRegressor used by the production agent described above.
+
+### Running the script
+
+From the repository root:
+
+```bash
+python ml-analysis/fatigue_ml_pipeline.py
+```
+
+Make sure `Workout_Routine_Dirty.csv` is present in `ml-analysis/` and that the required 
+packages (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scikit-learn`, `imbalanced-learn`) 
+are installed — see `requirements.txt`.
+
 ## Why It's an Agent (Not Just an ML Model)
 
 Unlike traditional ML APIs that process requests synchronously, FatigueBalance:
