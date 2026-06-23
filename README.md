@@ -142,8 +142,30 @@ From the repository root:
 python ml-analysis/fatigue_ml_pipeline.py
 ```
 
+## Supplementary Analysis Script
+
+`fatigue_analysis_supplement.py` extends the main analysis with additional diagnostics:
+
+- Frequency analysis – distribution of RiskLevel and other categorical variables
+- Extended descriptive statistics for all numeric variables
+- Sleep duration analysis with recommendations based on observed patterns
+- Fatigue category combinations – cross-tabulation across grouped variables
+- Diagrams for all numeric variables
+- Skewness/kurtosis summary – symmetry assessment of variable distributions
+
+> Note: this script complements `fatigue_ml_pipeline.py` rather than replacing it; both should 
+> be run against the same dataset for a complete picture.
+
+### Running the script
+
+From the repository root:
+
+```bash
+python ml-analysis/fatigue_analysis_supplement.py
+```
+
 Make sure `Workout_Routine_Dirty.csv` is present in `ml-analysis/` and that the required 
-packages (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scikit-learn`, `imbalanced-learn`) 
+packages (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scikit-learn`, `imbalanced-learn`,`scipy`) 
 are installed — see `requirements.txt`.
 
 ## Why It's an Agent (Not Just an ML Model)
